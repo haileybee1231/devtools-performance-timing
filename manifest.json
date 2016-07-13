@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+
+  "name": "View timing API data",
+  "description": "TODO",
+  "version": "1.0",
+
+  "devtools_page": "./devtools.html",
+
+  "permissions": [
+    "<all_urls>",
+    "tabs"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "js/d3.min.js"
+      ]
+    }
+  ]
+}
+
