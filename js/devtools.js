@@ -48,35 +48,38 @@ chrome.devtools.panels.create('Timing Viewer',
 
 let width,
   height,
-  axisHeight = 60,
+  axisHeight = 20,
   svg,
   gX,
   measureGroup,
   zoomable,
   d3,
-  line
+  line,
+  margin = { top: 0, right: 10, bottom: 0, left: 10 }
 
 function render (measures, window) {
   const container = window.document.getElementsByClassName('container')[0]
 
   d3 = window.d3
-  width = window.innerWidth,
-  height = Math.max(window.innerHeight, 200)
+  width = window.innerWidth - margin.left - margin.right,
+  // TODO figure out why height is 2 pixels too big
+  height = window.innerHeight - margin.top - margin.bottom - 2
 
   container.innerHTML = ''
 
   svg = d3.select(container).append('svg')
-    .attr('width', width)
-    .attr('height', height)
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
+    .append('g')
+      .attr('transform', `translate(${margin.left}, ${margin.top})`)
 
   gX = svg.append('g')
     .attr('class', 'axis')
     .attr('width', width)
-    .attr('height', 60)
-    .attr('transform', `translate(0,${height - axisHeight})`)
+    .attr('height', axisHeight)
+    .attr('transform', `translate(0, ${height - axisHeight})`)
 
-  measureGroup = svg
-    .append('g')
+  measureGroup = svg.append('g')
 
   line = svg.append('g')
 
