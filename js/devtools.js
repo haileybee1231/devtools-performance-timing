@@ -92,7 +92,7 @@ function render (measures, window) {
     .attr('y2', height - axisHeight)
 
   line.append('text')
-    .text('help')
+    .attr('x', 5)
 
   zoomable = svg.append('rect')
     .attr('class', 'zoom')
@@ -119,7 +119,7 @@ function update (measures) {
   const y = d3.scaleBand()
     .domain(measures.map(d => d.name))
     .range([0, height - axisHeight])
-    .padding(.1)
+    .padding(.15)
 
   // a join fn is most definitely not needed because measures can only be added and are never updated, but I'm adding one anyway to reinforce d3 learnings.
   const measureSelection = measureGroup.selectAll('.measure')
@@ -169,32 +169,36 @@ function update (measures) {
 
   gX.call(xAxisScale ? xAxis.scale(xAxisScale) : xAxis)
 
+  function updateLine () {
+    let coords = d3.mouse(this)
+
+    const time = (xAxisScale || x).invert(coords[0])
+    line.attr('transform', `translate(${coords[0]}, 0)`)
+
+    if (time !== -Infinity) {
+      line.select('text')
+        .attr('y', coords[1])
+        .text(`${time.toFixed(3)}ms`)
+    }
+  }
+
   zoomable
-    .on('mousemove', function() {
-      let coords = d3.mouse(this)
-
-      line.attr('transform', `translate(${coords[0]}, 0)`)
-      line.select('text')
-        .attr('y', coords[1])
-        .text(`${(xAxisScale || x).invert(coords[0]).toFixed(3)}ms`)
-    })
-    .on('mouseover', function() {
-      let coords = d3.mouse(this)
-
-      line.attr('transform', `translate(${coords[0]}, 0)`)
-      line.select('text')
-        .attr('y', coords[1])
-        .text(`${(xAxisScale || x).invert(coords[0]).toFixed(3)}ms`)
-    })
+    .on('mousemove', updateLine)
+    .on('mouseover', updateLine)
 
   zoomable
     .call(d3.zoom()
-    .scaleExtent([1, Infinity])
-    .translateExtent([[0, 0], [width, height]])
-    .on('zoom', handleZoom))
+      .scaleExtent([1, Infinity])
+      .translateExtent([[0, 0], [width, height]])
+      .on('zoom', handleZoom))
+
+  /* http://stackoverflow.com/questions/38534875/can-i-use-zoom-translateby-to-set-an-initial-pan
+  .scaleBy(2)
+  .translateBy(x(100), 0)
+  */
 
   function handleZoom () {
-    const t = d3.event.transform
+    t = d3.event.transform
     measureGroup.attr('transform', `translate(${t.x}, 0) scale(${t.k}, 1)`)
     // Un-scale text
     measureGroup.selectAll('text').attr('transform', `scale(${1/t.k}, 1)`)
