@@ -4,13 +4,16 @@ chrome.devtools.panels.create('Timing Viewer',
   'viewer.html',
   function (panel) {
     let runOnce
-    panel.onShown.addListener(function(pwindow) {
+    panel.onShown.addListener(function (pwindow) {
       if (runOnce) {
         return
       }
       runOnce = true
 
-      let firstTime = true
+      let fullRender = true
+      let count = 0
+
+      pwindow.onresize = () => { fullRender = true }
 
       // TODO use https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver
       function pollForMarks () {
@@ -19,15 +22,23 @@ chrome.devtools.panels.create('Timing Viewer',
           chrome.devtools.inspectedWindow.eval(getMarks, function (stringifiedMarks) {
             const marks = JSON.parse(stringifiedMarks)
 
-            const fn = firstTime ? render : update
-            firstTime = false
+            // No new data
+            if (!fullRender && count === marks.length) {
+              pollForMarks()
+              return
+            }
+
+            count = marks.length
+
+            const fn = fullRender ? render : update
+            fullRender = false
 
             pwindow.requestAnimationFrame(() => {
               fn(marks, pwindow)
               pollForMarks()
             })
           })
-        }, 500)
+        }, 100)
       }
 
       pollForMarks()
