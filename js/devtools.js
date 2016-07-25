@@ -1,4 +1,5 @@
 'use strict'
+
 chrome.devtools.panels.create('Timing Viewer',
   'toast.png',
   'viewer.html',
@@ -13,28 +14,53 @@ chrome.devtools.panels.create('Timing Viewer',
       let fullRender = true
       let count = 0
 
+      //renderControls(pwindow, [])
+
+      //chrome.devtools.inspectedWindow.eval(`window.performance.mark('a')`)
+
+      //pwindow.setTimeout(() => {
+        //chrome.devtools.inspectedWindow.eval(`window.performance.mark('b')`)
+      //}, 1500)
+
+      //const cmd = 'JSON.stringify(window.performance.getEntriesByType("mark"))'
+
+      /*
+      pwindow.setTimeout(() => {
+        chrome.devtools.inspectedWindow.eval(cmd, function (stringifiedMarks) {
+          console.log(stringifiedMarks)
+        })
+      }, 4000)
+      */
+
       pwindow.onresize = () => { fullRender = true }
 
       // TODO use https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver
       function pollForMarks () {
         setTimeout(function () {
-          const getMarks = 'JSON.stringify(window.performance.getEntriesByType("measure"))'
-          chrome.devtools.inspectedWindow.eval(getMarks, function (stringifiedMarks) {
-            const marks = JSON.parse(stringifiedMarks)
+          const getMarks = 'JSON.stringify(window.performance.getEntriesByType("mark"))'
+          const getMeasures = 'JSON.stringify(window.performance.getEntriesByType("measure"))'
+          chrome.devtools.inspectedWindow.eval(getMeasures, function (stringifiedMeasures) {
+            const measures = JSON.parse(stringifiedMeasures)
 
             // No new data
-            if (!fullRender && count === marks.length) {
+            if (!fullRender && count === measures.length) {
               pollForMarks()
               return
             }
 
-            count = marks.length
+            count = measures.length
 
             const fn = fullRender ? render : update
             fullRender = false
 
             pwindow.requestAnimationFrame(() => {
-              fn(marks, pwindow)
+              chrome.devtools.inspectedWindow.eval(getMarks, function (stringifiedMarks) {
+                console.log(stringifiedMarks)
+                const marks = JSON.parse(stringifiedMarks)
+                renderControls(pwindow, marks)
+              })
+
+              fn(measures, pwindow)
               pollForMarks()
             })
           })
@@ -45,6 +71,47 @@ chrome.devtools.panels.create('Timing Viewer',
     })
   }
 )
+
+/*** Controls ***/
+
+function renderControls (window, marks) {
+  const { Component, h, render } = window.preact
+
+  function createMeasure () {
+    const options = window.document.getElementsByTagName('option')
+
+    if (options.length) {
+      const compareMarks = Array.from(options).filter(option => !!option.selected).map(option => option.value)
+      if (compareMarks.length === 2) {
+        const [a, b] = compareMarks
+
+        const cmd = `window.performance.measure("${a} to ${b}", "${a}", "${b}")`
+        chrome.devtools.inspectedWindow.eval(cmd)
+      }
+    }
+  }
+
+  const Controls = () => {
+    return h('div', null,
+             h(Header),
+             h(Marks),
+             h('button', { onclick: createMeasure}, 'Create Measure'))
+  }
+
+  const Header = () => {
+    return h('header', null,
+             h('h3', null, 'Select two marks'))
+  }
+
+  const Marks = () => {
+    return h('select', { className: 'marks', multiple: 'multiple', size: 16 },
+               marks.map(mark => h('option', { value: mark.name }, mark.name)))
+  }
+  window.document.getElementById('controls').innerHTML = ''
+  render(h(Controls), window.document.getElementById('controls'))
+}
+
+/*** Chart ***/
 
 let width,
   height,
@@ -58,16 +125,16 @@ let width,
   margin = { top: 0, right: 10, bottom: 0, left: 10 }
 
 function render (measures, window) {
-  const container = window.document.getElementsByClassName('container')[0]
+  const chart = window.document.getElementById('chart')
 
   d3 = window.d3
-  width = window.innerWidth - margin.left - margin.right,
-  // TODO figure out why height is 2 pixels too big
-  height = window.innerHeight - margin.top - margin.bottom - 2
+  width = chart.offsetWidth - margin.left - margin.right,
+  // TODO figure out why height is a few pixels too big
+  height = window.innerHeight - margin.top - margin.bottom - 3
 
-  container.innerHTML = ''
+  chart.innerHTML = ''
 
-  svg = d3.select(container).append('svg')
+  svg = d3.select(chart).append('svg')
       .attr('width', width + margin.left + margin.right)
       .attr('height', height + margin.top + margin.bottom)
     .append('g')
@@ -198,7 +265,7 @@ function update (measures) {
   */
 
   function handleZoom () {
-    t = d3.event.transform
+    const t = d3.event.transform
     measureGroup.attr('transform', `translate(${t.x}, 0) scale(${t.k}, 1)`)
     // Un-scale text
     measureGroup.selectAll('text').attr('transform', `scale(${1/t.k}, 1)`)
