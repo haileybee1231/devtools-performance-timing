@@ -131,6 +131,11 @@ window.update = function (measures) {
       line.select('text')
         .attr('y', coords[1])
         .text(`${time.toFixed(3)}ms`)
+        .attr('x', function () {
+          let textWidth = d3.select(this).node().getBBox().width
+          let mouseNearRightEdge = coords[0] > width - textWidth
+          return mouseNearRightEdge ? -1 * textWidth - 5 : 5
+        })
     }
   }
 
