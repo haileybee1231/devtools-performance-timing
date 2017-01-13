@@ -1,6 +1,8 @@
 'use strict'
 
 // For some reason Chrome throws an error when you make measurements on these.
+// Instead of skipping these, we *could* rename the marks we generate from
+// them. Are they useful?
 const disallowedMarks = ['secureConnection',
   'redirectEnd',
   'redirectStart',

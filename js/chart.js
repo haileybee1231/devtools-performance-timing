@@ -55,13 +55,13 @@ window.render = function (measures) {
 }
 
 let xAxisScale
+let color = d3.scaleOrdinal(d3.schemeCategory10)
 window.update = function (measures) {
   const formatZeroSecondMillisecond = d3.timeFormat('%-Lms'),
     formatSecond = d3.timeFormat('%-S.%Ls'),
     multiFormat = function (date) {
       return (d3.timeSecond(date) < date && d3.timeSecond(date) < 1000 ? formatZeroSecondMillisecond : formatSecond)(date)
-    },
-    color = d3.scaleOrdinal(d3.schemeCategory10)
+    }
 
   const endTime = Math.max.apply(null, measures.map(d => d.startTime + d.duration))
   const x = d3.scaleLinear()
@@ -103,7 +103,6 @@ window.update = function (measures) {
   newMeasures
     .attr('transform', d => `translate(${x(d.startTime)},${y(d.name)})`)
 
-    console.log(color)
   newMeasures.append('rect')
     .style('fill', d => { console.log(d.name, color(d.name)); return color(d.name)})
     .attr('width', () => x(0))
