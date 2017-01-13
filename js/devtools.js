@@ -1,5 +1,13 @@
 'use strict'
 
+// For some reason Chrome throws an error when you make measurements on these.
+const disallowedMarks = ['secureConnection',
+  'redirectEnd',
+  'redirectStart',
+  'unloadEventStart',
+  'unloadEventEnd',
+  'secureConnectionStart']
+
 chrome.devtools.panels.create('Timing Viewer',
   'toast.png',
   'viewer.html',
@@ -43,9 +51,9 @@ chrome.devtools.panels.create('Timing Viewer',
         getData('window.performance.getEntriesByType("measure")', function (measures) {
           getData('window.performance.getEntriesByType("mark")', function (perfMarks) {
             getNavigationMarks(navMarks => {
-              const marks = navMarks.concat(perfMarks)
+              const allowedNavMarks = navMarks.filter(mark => disallowedMarks.indexOf(mark.name) === -1)
+              const marks = allowedNavMarks.concat(perfMarks)
               cb(marks, measures)
-
             })})})
       }
 
